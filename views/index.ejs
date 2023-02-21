@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- CSS only -->
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.1/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-iYQeCzEYFbKjA/T2uDLTpkwGzCiq6soy8tYaI1GyVh/UjpbCx/TYkiZhlZB6+fzT" crossorigin="anonymous">
+  <title>Document</title>
+</head>
+<style>
+  .names{
+    display:block;
+  }
+   .names{
+    display: none;
+  } 
+  .names small{
+    position: relative;
+    margin-left: 20px;
+  }
+  .names small::before{
+    position: absolute;
+    content: "";
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    top: 7px;
+    left: -15px;
+    background-color: green;
+  }
+  *::-webkit-scrollbar{
+    width: 10px;
+  }
+  *::-webkit-scrollbar-thumb{
+    background-color: #7c7c7c;
+    border-radius: 20px;
+  }
+  #msgspcs{
+    position: relative;
+  }
+  #msgspcs h6{
+    opacity: .2;
+    position: absolute;
+    bottom: 3%;
+    left: 50%;
+    z-index: 99;
+    transform: translate(-50%,0);
+  }
+ 
+</style>
+<body style="overflow: hidden;">
+  <div id="overlay" style="top: 0%; min-height: 100%; background-color: rgba(38, 37, 37, 0.716); z-index: 99999;"  class="container-fluid position-fixed d-flex justify-content-center align-items-center">
+   <div style="width: 40rem;" class="container card p-2"><label for="inputPassword5" class="form-label">Fake Name Here....</label>
+    <input type="text" id="inputPassword5" class="form-control" aria-describedby="passwordHelpBlock" placeholder="your fake name here...">
+    <div id="passwordHelpBlock" class="form-text">
+      Your fake name must be 8-20 characters long, contain letters special characters, or emoji.
+    </div>
+    <button id="enter" type="button" class="btn btn-outline-info mt-2">let's chat</button>
+  </div>
+
+  </div>
+  <div class="container">
+    <div style="min-width: 100px; z-index: 99; right: 1%;" class="online card position-absolute mt-2 p-2 "><h6>online (<span id="onlinenum">0</span>)</h6>
+      <div class="names"></div>
+    </div>
+    </div>
+  
+     <div id="msgspcs"  class="card p-3">
+      <h6></h6>
+       <div id="msgbox" style="height: 80vh; overflow: auto;" class="p-3">
+       </div>
+
+     </div>
+    
+      <div style="min-height: 20vh;" class="container">
+        <div class="form-floating mt-1">
+          <textarea style="resize: none;" class="form-control" placeholder="Leave a comment here" id="floatingTextarea"></textarea>
+          <label for="floatingTextarea">Write Your Message Here....</label>
+        </div>
+          <button id="send" style="min-width: 100%;" type="button" class="btn btn-outline-secondary mt-2">Send</button>
+        </div>
+      </div>
+
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.5.2/socket.io.js" integrity="sha512-VJ6+sp2E5rFQk05caiXXzQd1wBABpjEj1r5kMiLmGAAgwPItw1YpqsCCBtq8Yr1x6C49/mTpRdXtq8O2RcZhlQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <!-- JavaScript Bundle with Popper -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.1/dist/js/bootstrap.bundle.min.js" integrity="sha384-u1OknCvxWvY5kfmNBILK2hRnQC3Pr17a+RTT6rIHI7NnikvbZlHgTPOOmMi466C8" crossorigin="anonymous"></script>
+<script>
+  var socket = io();
+  var user = 'anonymous'
+  var timeout;
+  var scroll = true;
+  document.querySelector('#enter').addEventListener('click',function(){
+    if(document.querySelector('#inputPassword5').value.trim().length > 0){
+     user = document.querySelector('#inputPassword5').value
+      document.querySelector('#overlay').classList.add('d-none')
+      socket.emit('name',user);
+    }
+  })
+  document.querySelector('#send').addEventListener('click',function(){
+  if(document.querySelector('textarea').value.trim().length > 0){
+ document.querySelector('textarea').value;
+   socket.emit('msg', document.querySelector('textarea').value)
+  }
+  })
+
+  socket.on('msg',function(data){
+  document.querySelector('#msgbox').innerHTML += `<div style="max-width: 20vw;" class="card mt-2 p-2 bg bg-info"> <span> ${data.owner} :</span> ${data.msg} </div>`
+  document.querySelector('textarea').value = '';
+
+  // var objDiv = document.querySelector("#msgbox");
+  //  objDiv.scrollTop = objDiv.scrollHeight;
+  if(scroll === true){
+    var objDiv = document.querySelector("#msgbox");
+    objDiv.scrollTop = objDiv.scrollHeight;
+    scroll = false;
+  }
+  else if(objDiv.clientHeight === objDiv.scrollHeight){
+    objDiv.scrollTop = objDiv.scrollHeight;
+    scroll = true
+  }
+  })
+  socket.on('onlineuser',function(data){
+    var clutter = `<hr>`
+    document.querySelector('#onlinenum').textContent = data.length;
+    data.forEach(function(elem){
+      clutter += `<small>${elem}</small> <br>`   
+    });
+  
+    document.querySelector('.names').innerHTML = clutter
+  })
+  document.querySelector('textarea').addEventListener('input',function(){
+    socket.emit('typing')
+  })
+  socket.on('typing',function(data){
+    document.querySelector('#msgspcs h6').innerHTML = `<i>${data.username}</i> is typing..... `
+    clearTimeout(timeout)
+  timeout = setTimeout(function(){
+      document.querySelector('#msgspcs h6').textContent = ""; 
+    },1500)
+  })
+  document.querySelector('.online').addEventListener('click',function(){
+    document.querySelector('.names').style.display = 'initial'
+  })
+
+</script>
+</body>
+</html>
+
